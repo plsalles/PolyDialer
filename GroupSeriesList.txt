@@ -1,0 +1,2 @@
+endpoint_name,ip_address,user,password
+GroupServer1,192.168.1.133,admin,5712
