@@ -1,2 +1,5 @@
 endpoint_name,ip_address,user,password
 GroupServer1,192.168.1.133,admin,5712
+GroupServer2,192.168.1.161,admin,5712
+GroupServer2,192.168.1.162,admin,5712
+GroupServer2,192.168.1.163,admin,5712

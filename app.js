@@ -3,13 +3,14 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 //////////////VARIABLES///////////////
 let concurrentCalls = 2;
-var report = "";
+const fs = require('fs');
 //////////////////////////////////////
 
 class Calls {
   constructor() {
     this.calls = []
     this.index = 0
+    this.report = "Endpoint Name,Endpoint IP,Dial String,Call Type,Start Time, Call State, Audio TX Packet Loss, Audio TX Total Packets,Audio RX Packet Loss, Audio RX Total Packets,Video TX Packet Loss, Video TX Total Packets,Video RX Packet Loss, Video RX Total Packets,End Time\r\n"
   }
 
   // create a new player and save it in the collection
@@ -44,22 +45,41 @@ class Call {
     this.password = password;
     this.session = ""
     this.sessionId = "";
-    this.state = "";
+    this.callState = "";
     this.connectionId = 0;
     this.error = "";
     this.report = ""
   }
 
-  async getMediaStat() {
+  async getCallState() {
     const axios = require('axios');
     let res = "";
-    let mediaStat = await axios.get(`https://192.168.1.133/rest/conferences/0/connections/${this.connectionId}/mediastat`, {
+    let currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
       headers: {
         Cookie: `session_id=${this.sessionId}`
       }
     })
-    console.log(mediaStat.data)
+
+    if (currentStatus.data.connections[0]) {
+      let date = new Date(currentStatus.data.connections[0].startTime)
+      let dateFormated = (date.getFullYear() + "-" + ((date.getMonth() + 1)) + "-" + (date.getDate()) + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
+      this.report += `${currentStatus.data.connections[0].address},${currentStatus.data.connections[0].callType},${dateFormated},${currentStatus.data.connections[0].state},`
+      //console.log(this.report)
+    }
+
   }
+
+  async getMediaStat() {
+    const axios = require('axios');
+    let mediaStat = await axios.get(`https://${this.ip}/rest/conferences/0/connections/${this.connectionId}/mediastat`, {
+      headers: {
+        Cookie: `session_id=${this.sessionId}`
+      }
+    })
+    this.report += `${mediaStat.data[0].packetLoss},${mediaStat.data[0].totalPackets},${mediaStat.data[1].packetLoss},${mediaStat.data[1].totalPackets},${mediaStat.data[2].packetLoss},${mediaStat.data[2].totalPackets},${mediaStat.data[3].packetLoss},${mediaStat.data[3].totalPackets},`
+  }
+
+
 
   async getSession() {
     const axios = require('axios');
@@ -72,8 +92,6 @@ class Call {
           "user": "admin",
           "password": this.password
         })
-        console.log("GetSession Line 42")
-        console.log("POST --> ", res.data.session)
         this.session = res.data.session;
         this.sessionId = res.data.session.sessionId;
 
@@ -98,12 +116,11 @@ class Call {
     }
 
     try {
-      res = await axios.get('https://192.168.1.133/rest/session', {
+      res = await axios.get(`https://${this.ip}/rest/session`, {
         headers: {
           Cookie: `session_id=${this.sessionId}`
         }
       })
-      console.log("GET --> ", res.data)
     } catch (error) {
       console.log(error.config)
       console.log(error.response)
@@ -118,7 +135,7 @@ class Call {
         Cookie: `session_id=${this.sessionId}`
       }
     })
-    console.log(currentStatus.data.connections)
+    //console.log(currentStatus.data.connections)
 
     if (currentStatus.data.connections.length === 0) {
       try {
@@ -132,100 +149,81 @@ class Call {
           }
         })
         this.connectionId = res.data[0].href.split("/")[5];
-        console.log("ConnectionID --> ", res.data[0].href.split("/")[5])
+        //console.log("ConnectionID --> ", res.data[0].href.split("/")[5])
 
-        console.log(new Date())
         res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
           headers: {
             Cookie: `session_id=${this.sessionId}`
           }
         })
 
-        setTimeout(() => {
-          console.log(new Date())
-        }, 5000)
-        res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
-          headers: {
-            Cookie: `session_id=${this.sessionId}`
-          }
-        })
-
-        setTimeout(() => {
-          console.log(new Date())
-          console.log(res.data)
-          this.report += `${res.data.connections[0].address},${res.data.connections[0].state},${res.data.connections[0].callType},${res.data.connections[0].startTime},`
-        }, 5000)
 
       } catch (error) {
-      console.log(error.data)
-      console.log("Catch Line 149")
-
+        console.log(error.data)
+      }
+    } else {
+      return ("The system is already in a call", currentStatus.data)
     }
-  } else {
-  return ("The system is already in a call", currentStatus.data)
-}
   }
 
   async terminateCall() {
-  const axios = require('axios');
-  let res = "";
-  let currentStatus = await axios.get('https://192.168.1.133/rest/conferences/active', {
-    headers: {
-      Cookie: `session_id=${this.sessionId}`
-    }
-  })
+    const axios = require('axios');
 
-  console.log("terminating the call ", currentStatus.data)
-  if (currentStatus.data.connections.length != 0) {
-    try {
-      res = await axios.post(`https://${this.ip}/rest/conferences/active`, {
-        "action": "hangup"
-      }, {
-        headers: {
-          Cookie: `session_id=${this.sessionId}`
-        }
-      })
-      currentStatus = await axios.get('https://192.168.1.133/rest/conferences/active', {
-        headers: {
-          Cookie: `session_id=${this.sessionId}`
-        }
-      })
-      console.log(currentStatus.data)
-      console.log(this.report)
-      this.connectionId = 0
-
-
-
-    } catch (error) {
-      console.log(error.response.status)
-      console.log(error.response.data.reason)
-    }
-
-    console.log("The current call is disconnected", currentStatus.data.connections)
-  } else {
-    console.log("The system is not in a call", currentStatus.data)
-  }
-
-
-
-}
-
-  async terminateSession() {
-  const axios = require('axios');
-  let res = "";
-
-  try {
-    console.log("this.sessionId = ", this.sessionId)
-    res = await axios.delete('https://192.168.1.133/rest/sessions/self', {
+    let currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
       headers: {
         Cookie: `session_id=${this.sessionId}`
       }
     })
-  } catch (error) {
-    console.log(error.config)
-    console.log(error.response)
+
+    if (currentStatus.data.connections.length != 0) {
+      try {
+        await axios.post(`https://${this.ip}/rest/conferences/active`, {
+          "action": "hangup"
+        }, {
+          headers: {
+            Cookie: `session_id=${this.sessionId}`
+          }
+        })
+        currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+          headers: {
+            Cookie: `session_id=${this.sessionId}`
+          }
+        })
+
+        this.connectionId = 0
+        let date = new Date()
+        let dateFormated = (date.getFullYear() + "-" + ((date.getMonth() + 1)) + "-" + (date.getDate()) + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
+        console.log(dateFormated)
+        this.report += `${dateFormated}\r\n`
+        //console.log(this.report)
+
+      } catch (error) {
+        console.log(error.response.status)
+        console.log(error.response.data.reason)
+      }
+
+      console.log("The current call is disconnected")
+    } else {
+      console.log("The system is not in a call")
+    }
   }
-}
+
+  async terminateSession() {
+    const axios = require('axios');
+    let res = "";
+
+    try {
+      //console.log("this.sessionId = ", this.sessionId)
+      res = await axios.delete(`https://${this.ip}/rest/sessions/self`, {
+        headers: {
+          Cookie: `session_id=${this.sessionId}`
+        }
+      })
+    } catch (error) {
+      console.log(error.config)
+      console.log(error.response)
+    }
+  }
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,7 +239,7 @@ readFile("/mnt/d/Repo/PolyDialer/GroupSeriesList.txt").then(fileBuffer => {
   console.log(input)
   input = input.forEach((element) => {
     let output = element.split(',')
-    console.log(output)
+    //console.log(output)
   })
 
   /////////Converting the CSV input to a Object////////////
@@ -265,15 +263,16 @@ readFile("/mnt/d/Repo/PolyDialer/GroupSeriesList.txt").then(fileBuffer => {
   objects.forEach((element) => {
     calls.newCall(element.endpoint_name, element.ip_address, element.password)
   })
-  let interval;
+  let response;
 
   let dialerInterval = setInterval(async function () {
     if (calls.allCalls().length <= calls.getIndex()) {
       clearInterval(dialerInterval)
     } else {
-      dialer(calls, concurrentCalls);
+      response = await dialer(calls, concurrentCalls)
+
     }
-  }, 15000);
+  }, 10000);
 })
 
 
@@ -294,21 +293,31 @@ async function dialer(calls, concurrentCalls) {
 
   for (let i = start; i < stop; i++) {
     let newCall = calls.allCalls()[i];
-
     newCall.getSession().then(() => {
       if (newCall.sessionId != "") {
         newCall.makeCall().then(() => {
           if (newCall.connectionId != 0) {
             setTimeout(() => {
-              newCall.getMediaStat().then(() => {
-                newCall.terminateCall().then(() => {
-                  newCall.terminateSession();
-                });
+              newCall.getCallState().then(() => {
+                setTimeout(() => {
+                  //console.log("entrando no media stat")
+                  newCall.getMediaStat().then(() => {
+                    //console.log("entrando no media stat")
+                    newCall.terminateCall().then(() => {
+                      newCall.terminateSession();
+                      calls.report += newCall.report;
+                      if (i + 1 === stop) {
+                        generateReport(calls.report);
+                      }
+                    });
+                  });
+                }, 60000)
               });
-            }, 65000)
+            }, 10000)
           } else {
             console.log("System already in a call")
           }
+
         })
       } else {
         switch (newCall.error) {
@@ -321,7 +330,24 @@ async function dialer(calls, concurrentCalls) {
           default:
             console.log("ERROR --> An unexpected error happened!")
         }
+        if (i + 1 === stop) {
+          generateReport(calls.report);
+        }
       }
     })
   }
+}
+
+async function generateReport(report) {
+
+  let date = new Date()
+  let dataFormated = (date.getFullYear() + "0" + ((date.getMonth() + 1)) + "0" + (date.getDate()) + date.getHours() + date.getMinutes());
+  fs.writeFile(`/mnt/d/Repo/PolyDialer/PolyDialerReport-${dataFormated}.csv`, report, function (err) {
+    if (err) {
+      return console.log(err);
+    }
+    console.log("Poly dialer has finished, please check the reports");
+  });
+
+
 }
