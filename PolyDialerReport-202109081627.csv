@@ -1,3 +1,0 @@
-Endpoint Name,Endpoint IP,Dial String,Call Type,Start Time, Call State, Audio TX Packet Loss, Audio TX Total Packets,Audio RX Packet Loss, Audio RX Total Packets,Video TX Packet Loss, Video TX Total Packets,Video RX Packet Loss, Video RX Total Packets,End Time
-GroupServer1,192.168.1.133,888888.1120324757@t.plcm.vc,H323,2021-9-8 16:26:16,CONNECTED,0,3445,10,3426,0,6462,2,2168,2021-9-8 16:27:28
-GroupServer2,192.168.1.161,888888.1120324757@t.plcm.vc,H323,2021-9-8 16:26:16,CONNECTED,0,3300,0,3292,0,1965,1,3194,2021-9-8 16:27:29
