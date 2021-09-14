@@ -1,3 +1,4 @@
 endpoint_name,ip_address,user,password,dialstring,calltype,callrate
 GroupServer1,192.168.1.133,admin,5712,888888.1120324757@t.plcm.vc,SIP,2048
 GroupServer2,192.168.1.134,admin,5712,888888.1120324757@t.plcm.vc,H323,1024
+GroupServer2,192.168.1.254,admin,5712,888888.1120324757@t.plcm.vc,H323,1024

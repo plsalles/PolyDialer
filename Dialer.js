@@ -12,7 +12,7 @@ async function dialer(calls, concurrentCalls) {
 
     for (let i = start; i < stop; i++) {
         let newCall = calls.allCalls()[i];
-        console.log("Making the call\r\n",newCall)
+        console.log(`Dialing from the Endpoint Name ${newCall.name} IP ${newCall.ip}\r\n`)
         newCall.getSession().then(() => {
             if (newCall.sessionId != "") {
                 newCall.makeCall().then(() => {

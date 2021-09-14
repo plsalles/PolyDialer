@@ -61,7 +61,7 @@ class Call {
             } catch (error) {
 
                 if (error.code) {
-                    console.log("Error --> ", error.code)
+                    //console.log("Error --> ", error.code)
                     this.error = error.code
                     return
                 }
