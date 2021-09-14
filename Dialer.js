@@ -12,16 +12,17 @@ async function dialer(calls, concurrentCalls) {
 
     for (let i = start; i < stop; i++) {
         let newCall = calls.allCalls()[i];
-        console.log(`Dialing from the Endpoint Name ${newCall.name} IP ${newCall.ip}\r\n`)
+        console.log(`Initiating the call of Endpoint Line ${i + 1} Name ${newCall.name} IP ${newCall.ip} - ${new Date()}`)
         newCall.getSession().then(() => {
             if (newCall.sessionId != "") {
                 newCall.makeCall().then(() => {
-                    if (newCall.connectionId != 0) {
+                    if (newCall.connectionId != 0 && newCall.inCall == false) {
                         setTimeout(() => {
                             newCall.getCallState().then(() => {
                                 setTimeout(() => {
                                     newCall.getMediaStat().then(() => {
                                         newCall.terminateCall().then(() => {
+                                            console.log(`The call of Endpoint Line ${i+1} Name ${newCall.name} IP ${newCall.ip} is disconnected - ${new Date()}`)
                                             calls.report += newCall.report;
                                             newCall.terminateSession();
                                         });
@@ -30,7 +31,8 @@ async function dialer(calls, concurrentCalls) {
                             });
                         }, 10000)
                     } else {
-                        console.log("System already in a call")
+                        console.log(`The Endpoint ${newCall.name} IP ${newCall.ip} is already in a call - ${new Date()}`)
+                        calls.report += newCall.report;
                     }
 
                 })
@@ -39,16 +41,16 @@ async function dialer(calls, concurrentCalls) {
                 switch (newCall.error) {
                     case 'ECONNREFUSED':
 
-                        console.log(`ERROR --> Unable to connect to the Endpoint ${newCall.name} IP: ${newCall.ip}, please check the IP and try again`)
-                        newCall.report += `UNREACHABLE\r\n`
+                        console.log(`ERROR --> Unable to connect to the Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip} - ${new Date()}`)
+                        newCall.report += `UNREACHABLE\n`
                         break
                     case 'SessionInvalidUserNamePassword':
-                        console.log(`ERROR --> Invalid username or password for Endpoint ${newCall.name} IP: ${newCall.ip}`)
-                        newCall.report += `SessionInvalidUserNamePassword\r\n`
+                        console.log(`ERROR --> Invalid username or password for Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip} - ${new Date()}`)
+                        newCall.report += `SessionInvalidUserNamePassword\n`
                         break
                     default:
-                        console.log(`ERROR --> An unexpected error happened for Endpoint${newCall.name} IP: ${newCall.ip}!`)
-                        newCall.report += `UnexpectedErrorHappened\r\n`
+                        console.log(`ERROR --> An unexpected error happened for Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip} - ${new Date()}`)
+                        newCall.report += `UnexpectedErrorHappened\n`
                 }
                 calls.report += newCall.report;
             }

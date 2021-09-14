@@ -1,6 +1,8 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+
 const axios = require('axios');
+const dateFormat = require('./utils/dateFormat');
 
 class Call {
     constructor(name, ip, password, dialString, callType, callRate) {
@@ -12,7 +14,7 @@ class Call {
         this.password = password;
         this.session = ""
         this.sessionId = "";
-        this.callState = "";
+        this.inCall = false;
         this.connectionId = 0;
         this.error = "";
         this.report = "";
@@ -27,9 +29,7 @@ class Call {
         })
 
         if (currentStatus.data.connections[0]) {
-            let date = new Date(currentStatus.data.connections[0].startTime)
-            let dateFormated = (date.getFullYear() + "-" + ((date.getMonth() + 1)) + "-" + (date.getDate()) + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
-            this.report += `${this.dialString},${this.callType},${this.callRate},${currentStatus.data.connections[0].state},${dateFormated},`
+            this.report += `${this.dialString},${this.callType},${this.callRate},${currentStatus.data.connections[0].state},${dateFormat(currentStatus.data.connections[0].startTime)},`
         }
 
     }
@@ -122,7 +122,8 @@ class Call {
                 console.log(error.data)
             }
         } else {
-            return ("The system is already in a call", currentStatus.data)
+            this.inCall = true;
+            this.report += `${this.dialString},${this.callType},${this.callRate},AlreadyInCall,${dateFormat(currentStatus.data.connections[0].startTime)}\r\n`
         }
     }
 
@@ -134,7 +135,7 @@ class Call {
             }
         })
 
-        if (currentStatus.data.connections.length != 0) {
+        if (currentStatus.data.connections.length != 0 && this.inCall == false) {
             try {
                 await axios.post(`https://${this.ip}/rest/conferences/active`, {
                     "action": "hangup"
@@ -150,19 +151,15 @@ class Call {
                 })
 
                 this.connectionId = 0
-                let date = new Date()
-                let dateFormated = (date.getFullYear() + "-" + ((date.getMonth() + 1)) + "-" + (date.getDate()) + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds());
-                this.report += `${dateFormated}\r\n`
-
+                this.report += `${dateFormat()}\r\n`
 
             } catch (error) {
                 console.log(error.response.status)
                 console.log(error.response.data.reason)
             }
 
-            console.log("The current call is disconnected")
         } else {
-            console.log("The system is not in a call")
+            console.log("The system is not in a call or the current call was not initiated by PolyDialer")
         }
     }
 

@@ -1,18 +1,18 @@
 'use strict'
 
-const fs = require('fs');
 const { promises: { readFile } } = require("fs");
-const { clear, Console } = require('console');
-
 const Calls = require('./Calls');
 const Dialer = require('./Dialer');
 const convertToObj = require('./utils/convertToObj');
 const createReport = require('./utils/createReport');
 const csvValidator = require('./utils/csvValidator');
 
+//Number of concurrent calls the dialer will make per interval
 let concurrentCalls = 2;
+//Dialer interval between concurrent calls in seconds
+let dialerTimer = 15;
 
-console.log("GSDialer initialized");
+console.log("PolyDialer has started");
 
 readFile("/mnt/d/Repo/PolyDialer/GroupSeriesList.txt").then(fileBuffer => {
   console.log("Reading CSV file")
@@ -35,7 +35,7 @@ readFile("/mnt/d/Repo/PolyDialer/GroupSeriesList.txt").then(fileBuffer => {
       } else {
         response = await Dialer(calls, concurrentCalls)
       }
-    }, 10000);
+    }, dialerTimer*1000);
   }
 })
 
