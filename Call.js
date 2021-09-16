@@ -5,10 +5,11 @@ const axios = require('axios');
 const dateFormat = require('./utils/dateFormat');
 
 class Call {
-    constructor(name, ip, password, dialString, callType, callRate) {
+    constructor(name, ip, password, dialString, callType, callRate, endpointModel) {
         this.dialString = dialString;
         this.callType = callType;
         this.callRate = callRate;
+        this.endpointModel = endpointModel;
         this.name = name;
         this.ip = ip;
         this.password = password;
@@ -47,7 +48,13 @@ class Call {
     async getSession() {
 
         let res = "";
-        this.report += `${this.name},${this.ip},`
+        switch (endpointType) {
+            case 'group':
+ 
+            case 'nextGen':
+
+        }
+
         if (this.sessionId === "") {
             try {
                 res = await axios.post(`https://${this.ip}/rest/session`, {
@@ -61,7 +68,6 @@ class Call {
             } catch (error) {
 
                 if (error.code) {
-                    //console.log("Error --> ", error.code)
                     this.error = error.code
                     return
                 }
@@ -91,14 +97,13 @@ class Call {
 
     async makeCall() {
 
-        let res = "";
-        let currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+        let res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
         })
 
-        if (currentStatus.data.connections.length === 0) {
+        if (res.data.connections.length === 0) {
             try {
                 res = await axios.post(`https://${this.ip}/rest/conferences`, {
                     "address": `${this.dialString}`,

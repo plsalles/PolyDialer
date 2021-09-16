@@ -10,115 +10,135 @@ class HTTPController {
     }
 
     async getCallState(endpointType, ip, sessionId) {
-
-        let currentStatus = await axios.get(`https://${ip}/rest/conferences/active`, {
-            headers: {
-                Cookie: `session_id=${sessionId}`
-            }
-        })
+        switch (endpointType) {
+            case 'group':
+                return await axios.get(`https://${ip}/rest/conferences/active`, {
+                    headers: {
+                        Cookie: `session_id=${sessionId}`
+                    }
+                })
+            case 'nextGen':
+                return await axios.get(`https://${ip}/rest/conferences/active`, {
+                    headers: {
+                        Cookie: `session_id=${sessionId}`
+                    }
+                })
+        }
     }
 
     async getMediaStat(endpointType, ip, sessionId, connectionId) {
-
-        let mediaStat = await axios.get(`https://${ip}/rest/conferences/0/connections/${connectionId}/mediastat`, {
-            headers: {
-                Cookie: `session_id=${sessionId}`
-            }
-        })
+        switch (endpointType) {
+            case 'group':
+                return await axios.get(`https://${ip}/rest/conferences/0/connections/${connectionId}/mediastat`, {
+                    headers: {
+                        Cookie: `session_id=${sessionId}`
+                    }
+                })
+            case 'nextGen':
+        }
     }
 
     async getSession(endpointType, ip, sessionId) {
-
         let res = "";
-        if (sessionId === "") {
-            res = await axios.post(`https://${ip}/rest/session`, {
-                "action": "Login",
-                "user": "admin",
-                "password": password
-            })
-        } else {
-            res = await axios.get(`https://${ip}/rest/session`, {
-                headers: {
-                    Cookie: `session_id=${sessionId}`
+        switch (endpointType) {
+            case 'group':
+                if (sessionId === "") {
+                    res = await axios.post(`https://${ip}/rest/session`, {
+                        "action": "Login",
+                        "user": "admin",
+                        "password": password
+                    })
+                } else {
+                    res = await axios.get(`https://${ip}/rest/session`, {
+                        headers: {
+                            Cookie: `session_id=${sessionId}`
+                        }
+                    })
                 }
-            })
+            case 'nextGen':
+                break;
         }
-        
         return res;
     }
 
-    async makeCall(endpointType, ip, sessionId,dialString,callType,callRate) {
+    async makeCall(endpointType, ip, sessionId, dialString, callType, callRate) {
 
         let res = "";
-        let res= await axios.get(`https://${ip}/rest/conferences/active`, {
-            headers: {
-                Cookie: `session_id=${sessionId}`
-            }
-        })
 
-        if (currentStatus.data.connections.length === 0) {
-            try {
-                res = await axios.post(`https://${ip}/rest/conferences`, {
-                    "address": `${dialString}`,
-                    "dialType": `${callType}`,
-                    "rate": `${callRate}`
-                }, {
-                    headers: {
-                        Cookie: `session_id=${sessionId}`
-                    }
-                })
-                this.connectionId = res.data[0].href.split("/")[5];
-
+        switch (endpointType) {
+            case 'group':
                 res = await axios.get(`https://${ip}/rest/conferences/active`, {
                     headers: {
                         Cookie: `session_id=${sessionId}`
                     }
                 })
 
+                if (res.data.connections.length === 0) {
 
-            } catch (error) {
-                console.log(error.data)
-            }
-        } else {
-            return ("The system is already in a call", res.data)
+                    res = await axios.post(`https://${ip}/rest/conferences`, {
+                        "address": `${dialString}`,
+                        "dialType": `${callType}`,
+                        "rate": `${callRate}`
+                    }, {
+                        headers: {
+                            Cookie: `session_id=${sessionId}`
+                        }
+                    })
+                    this.connectionId = res.data[0].href.split("/")[5];
+
+                    res = await axios.get(`https://${ip}/rest/conferences/active`, {
+                        headers: {
+                            Cookie: `session_id=${sessionId}`
+                        }
+                    })
+
+                    return res.data
+                } else {
+                    return ("The system is already in a call", res.data)
+                }
+            case 'nextGen':
+
         }
+
+
     }
 
     async terminateCall(endpointType, ip, sessionId) {
+        let res = "";
 
-        let res = await axios.get(`https://${ip}/rest/conferences/active`, {
-            headers: {
-                Cookie: `session_id=${sessionId}`
-            }
-        })
-
-        if (res.data.connections.length != 0) {
-            try {
-                await axios.post(`https://${ip}/rest/conferences/active`, {
-                    "action": "hangup"
-                }, {
-                    headers: {
-                        Cookie: `session_id=${sessionId}`
-                    }
-                })
+        switch (endpointType) {
+            case 'group':
                 res = await axios.get(`https://${ip}/rest/conferences/active`, {
                     headers: {
                         Cookie: `session_id=${sessionId}`
                     }
                 })
 
-            return res.data
+                if (res.data.connections.length != 0) {
 
+                    await axios.post(`https://${ip}/rest/conferences/active`, {
+                        "action": "hangup"
+                    }, {
+                        headers: {
+                            Cookie: `session_id=${sessionId}`
+                        }
+                    })
+                    res = await axios.get(`https://${ip}/rest/conferences/active`, {
+                        headers: {
+                            Cookie: `session_id=${sessionId}`
+                        }
+                    })
+                    console.log("The current call is disconnected")
+                    return res.data
 
-            } catch (error) {
-                console.log(error.response.status)
-                console.log(error.response.data.reason)
-            }
+                } else {
+                    console.log("The system is not in a call")
+                    return res.data;
+                }
+            case 'nextGen':
 
-            console.log("The current call is disconnected")
-        } else {
-            console.log("The system is not in a call")
         }
+
     }
 
     async terminateSession(endpointType, ip, sessionId) {
