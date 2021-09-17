@@ -1,2 +1,3 @@
-endpoint_name,ip_address,user,password,dialstring,calltype,callrate
-GroupServer1,192.168.1.133,admin,,888888.1120324757@t.plcm.vc,SIP,2048
+endpointName,endpointType,ipAddress,user,password,dialString,callType,callRate
+GS1,Group,192.168.1.133,admin,,888888.1120324757@t.plcm.vc,SIP,2048
+x30,nextGen,192.168.1.153,admin,5712,888888.1120324757@t.plcm.vc,SIP,2048

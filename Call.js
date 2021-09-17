@@ -5,11 +5,11 @@ const axios = require('axios');
 const dateFormat = require('./utils/dateFormat');
 
 class Call {
-    constructor(name, ip, password, dialString, callType, callRate, endpointModel) {
+    constructor(name, endpointType, ip, password, dialString, callType, callRate) {
         this.dialString = dialString;
         this.callType = callType;
         this.callRate = callRate;
-        this.endpointModel = endpointModel;
+        this.endpointType = endpointType;
         this.name = name;
         this.ip = ip;
         this.password = password;
@@ -23,38 +23,34 @@ class Call {
 
     async getCallState() {
 
-        let currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+        let res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
         })
 
-        if (currentStatus.data.connections[0]) {
-            this.report += `${this.dialString},${this.callType},${this.callRate},${currentStatus.data.connections[0].state},${dateFormat(currentStatus.data.connections[0].startTime)},`
+        if (res.data.connections[0]) {
+            this.report += `${this.dialString},${this.callType},${this.callRate},${res.data.connections[0].state},${dateFormat(res.data.connections[0].startTime)},`
         }
+        return res.data;
 
     }
 
     async getMediaStat() {
-
-        let mediaStat = await axios.get(`https://${this.ip}/rest/conferences/0/connections/${this.connectionId}/mediastat`, {
+        
+        let res = await axios.get(`https://${this.ip}/rest/conferences/0/connections/${this.connectionId}/mediastat`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
         })
-        this.report += `${mediaStat.data[0].packetLoss},${mediaStat.data[0].totalPackets},${mediaStat.data[1].packetLoss},${mediaStat.data[1].totalPackets},${mediaStat.data[2].packetLoss},${mediaStat.data[2].totalPackets},${mediaStat.data[3].packetLoss},${mediaStat.data[3].totalPackets},`
+        this.report += `${res.data[0].packetLoss},${res.data[0].totalPackets},${res.data[1].packetLoss},${res.data[1].totalPackets},${res.data[2].packetLoss},${res.data[2].totalPackets},${res.data[3].packetLoss},${res.data[3].totalPackets},`
+        return res.data;
     }
 
     async getSession() {
 
         let res = "";
-        switch (endpointType) {
-            case 'group':
- 
-            case 'nextGen':
-
-        }
-
+        this.report += `${this.name},${this.ip},${this.endpointType},`
         if (this.sessionId === "") {
             try {
                 res = await axios.post(`https://${this.ip}/rest/session`, {
@@ -82,16 +78,6 @@ class Call {
                 console.log(error)
                 return
             }
-        }
-
-        try {
-            await axios.get(`https://${this.ip}/rest/session`, {
-                headers: {
-                    Cookie: `session_id=${this.sessionId}`
-                }
-            })
-        } catch (error) {
-
         }
     }
 
@@ -128,19 +114,20 @@ class Call {
             }
         } else {
             this.inCall = true;
-            this.report += `${this.dialString},${this.callType},${this.callRate},AlreadyInCall,${dateFormat(currentStatus.data.connections[0].startTime)}\r\n`
+            this.report += `${this.dialString},${this.callType},${this.callRate},AlreadyInCall,${dateFormat(res.data.connections[0].startTime)}\r\n`
         }
     }
 
+
     async terminateCall() {
 
-        let currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+        let res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
         })
 
-        if (currentStatus.data.connections.length != 0 && this.inCall == false) {
+        if (res.data.connections.length != 0 && this.inCall == false) {
             try {
                 await axios.post(`https://${this.ip}/rest/conferences/active`, {
                     "action": "hangup"
@@ -149,7 +136,7 @@ class Call {
                         Cookie: `session_id=${this.sessionId}`
                     }
                 })
-                currentStatus = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+                res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
                     headers: {
                         Cookie: `session_id=${this.sessionId}`
                     }
@@ -166,24 +153,42 @@ class Call {
         } else {
             console.log("The system is not in a call or the current call was not initiated by PolyDialer")
         }
+        return res.data
     }
+
 
     async terminateSession() {
-        
-        let res = "";
 
-        try {
-            res = await axios.delete(`https://${this.ip}/rest/sessions/self`, {
-                headers: {
-                    Cookie: `session_id=${this.sessionId}`
+        let res = "";
+        switch (this.endpointType) {
+            case 'group':
+                try {
+                    res = await axios.delete(`https://${this.ip}/rest/sessions/self`, {
+                        headers: {
+                            Cookie: `session_id=${this.sessionId}`
+                        }
+                    })
+                    console.log(res.data)
+                } catch (error) {
+                    console.log(error.config)
+                    console.log(error.response)
                 }
-            })
-        } catch (error) {
-            console.log(error.config)
-            console.log(error.response)
+                return res;
+            case 'nextGen':
+                try {
+                    res = await axios.delete(`https://${this.ip}/rest/session`, {
+                        headers: {
+                            Cookie: `session_id=${this.sessionId}`
+                        }
+                    })
+                    console.log(res.data)
+                } catch (error) {
+                    console.log(error.config)
+                    console.log(error.response)
+                }
+                return res;
         }
     }
-
 }
 
 module.exports = Call;
