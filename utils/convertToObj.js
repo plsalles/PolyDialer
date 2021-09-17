@@ -7,7 +7,7 @@ function convertToObj(fileBuffer) {
             line.split(valueSeparator).reduce(
                 (object, value, index) => ({
                     ...object,
-                    [headers[index].toLowerCase()]: value,
+                    [headers[index]]: value,
                 }),
                 {}
             )

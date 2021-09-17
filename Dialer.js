@@ -1,3 +1,5 @@
+const dateFormat = require('./utils/dateFormat');
+
 async function dialer(calls, concurrentCalls) {
 
     let start = calls.getIndex()
@@ -12,7 +14,7 @@ async function dialer(calls, concurrentCalls) {
 
     for (let i = start; i < stop; i++) {
         let newCall = calls.allCalls()[i];
-        console.log(`Initiating the call of Endpoint Line ${i + 1} Name ${newCall.name} IP ${newCall.ip} - ${new Date()}`)
+        console.log(`${dateFormat(new Date())} - Initiating the call of Endpoint Line ${i + 1} Name ${newCall.name} IP ${newCall.ip}`)
         newCall.getSession().then(() => {
             if (newCall.sessionId != "") {
                 newCall.makeCall().then(() => {
@@ -22,7 +24,7 @@ async function dialer(calls, concurrentCalls) {
                                 setTimeout(() => {
                                     newCall.getMediaStat().then(() => {
                                         newCall.terminateCall().then(() => {
-                                            console.log(`The call of Endpoint Line ${i+1} Name ${newCall.name} IP ${newCall.ip} is disconnected - ${new Date()}`)
+                                            console.log(`${dateFormat(new Date())} - The call of Endpoint Line ${i+1} Name ${newCall.name} IP ${newCall.ip} is disconnected`)
                                             calls.report += newCall.report;
                                             newCall.terminateSession();
                                         });
@@ -31,7 +33,7 @@ async function dialer(calls, concurrentCalls) {
                             });
                         }, 10000)
                     } else {
-                        console.log(`The Endpoint ${newCall.name} IP ${newCall.ip} is already in a call - ${new Date()}`)
+                        console.log(`${dateFormat(new Date())} - The Endpoint ${newCall.name} IP ${newCall.ip} is already in a call`)
                         calls.report += newCall.report;
                     }
 
@@ -41,15 +43,15 @@ async function dialer(calls, concurrentCalls) {
                 switch (newCall.error) {
                     case 'ECONNREFUSED':
 
-                        console.log(`ERROR --> Unable to connect to the Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip} - ${new Date()}`)
+                        console.log(`${dateFormat(new Date())} - ERROR --> Unable to connect to the Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip}`)
                         newCall.report += `UNREACHABLE\n`
                         break
                     case 'SessionInvalidUserNamePassword':
-                        console.log(`ERROR --> Invalid username or password for Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip} - ${new Date()}`)
+                        console.log(`${dateFormat(new Date())} - ERROR --> Invalid username or password for Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip}`)
                         newCall.report += `SessionInvalidUserNamePassword\n`
                         break
                     default:
-                        console.log(`ERROR --> An unexpected error happened for Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip} - ${new Date()}`)
+                        console.log(`${dateFormat(new Date())} - ERROR --> An unexpected error happened for Endpoint Line ${i+1} Name ${newCall.name} IP: ${newCall.ip}`)
                         newCall.report += `UnexpectedErrorHappened\n`
                 }
                 calls.report += newCall.report;
