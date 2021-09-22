@@ -1,19 +1,17 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-
 const axios = require('axios');
 const dateFormat = require('./utils/dateFormat');
 
 class Call {
-    constructor(name, endpointType, ip, password, dialString, callType, callRate) {
+    constructor(endpointName, endpointType, ipAddress, password, dialString, callType, callRate) {
         this.dialString = dialString;
         this.callType = callType;
         this.callRate = callRate;
         this.endpointType = endpointType;
-        this.name = name;
-        this.ip = ip;
+        this.endpointName = endpointName;
+        this.ipAddress = ipAddress;
         this.password = password;
-        this.session = ""
         this.sessionId = "";
         this.inCall = false;
         this.connectionId = 0;
@@ -23,7 +21,7 @@ class Call {
 
     async getCallState() {
 
-        let res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+        let res = await axios.get(`https://${this.ipAddress}/rest/conferences/active`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
@@ -38,7 +36,7 @@ class Call {
 
     async getMediaStat() {
         
-        let res = await axios.get(`https://${this.ip}/rest/conferences/0/connections/${this.connectionId}/mediastat`, {
+        let res = await axios.get(`https://${this.ipAddress}/rest/conferences/0/connections/${this.connectionId}/mediastat`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
@@ -50,15 +48,15 @@ class Call {
     async getSession() {
 
         let res = "";
-        this.report += `${this.name},${this.ip},${this.endpointType},`
+        this.report += `${this.endpointName},${this.ipAddress},${this.endpointType},`
         if (this.sessionId === "") {
             try {
-                res = await axios.post(`https://${this.ip}/rest/session`, {
+                res = await axios.post(`https://${this.ipAddress}/rest/session`, {
                     "action": "Login",
                     "user": "admin",
                     "password": this.password
                 })
-                this.session = res.data.session;
+                //this.session = res.data.session;
                 this.sessionId = res.data.session.sessionId;
 
             } catch (error) {
@@ -83,7 +81,7 @@ class Call {
 
     async makeCall() {
 
-        let res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+        let res = await axios.get(`https://${this.ipAddress}/rest/conferences/active`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
@@ -91,7 +89,7 @@ class Call {
 
         if (res.data.connections.length === 0) {
             try {
-                res = await axios.post(`https://${this.ip}/rest/conferences`, {
+                res = await axios.post(`https://${this.ipAddress}/rest/conferences`, {
                     "address": `${this.dialString}`,
                     "dialType": `${this.callType}`,
                     "rate": `${this.callRate}`
@@ -102,13 +100,11 @@ class Call {
                 })
                 this.connectionId = res.data[0].href.split("/")[5];
 
-                res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+                res = await axios.get(`https://${this.ipAddress}/rest/conferences/active`, {
                     headers: {
                         Cookie: `session_id=${this.sessionId}`
                     }
                 })
-
-
             } catch (error) {
                 console.log(error.data)
             }
@@ -118,10 +114,9 @@ class Call {
         }
     }
 
-
     async terminateCall() {
 
-        let res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+        let res = await axios.get(`https://${this.ipAddress}/rest/conferences/active`, {
             headers: {
                 Cookie: `session_id=${this.sessionId}`
             }
@@ -129,14 +124,15 @@ class Call {
 
         if (res.data.connections.length != 0 && this.inCall == false) {
             try {
-                await axios.post(`https://${this.ip}/rest/conferences/active`, {
+                await axios.post(`https://${this.ipAddress}/rest/conferences/active`, {
                     "action": "hangup"
                 }, {
                     headers: {
                         Cookie: `session_id=${this.sessionId}`
                     }
                 })
-                res = await axios.get(`https://${this.ip}/rest/conferences/active`, {
+
+                res = await axios.get(`https://${this.ipAddress}/rest/conferences/active`, {
                     headers: {
                         Cookie: `session_id=${this.sessionId}`
                     }
@@ -146,6 +142,7 @@ class Call {
                 this.report += `${dateFormat()}\r\n`
 
             } catch (error) {
+                console.log(error)
                 console.log(error.response.status)
                 console.log(error.response.data.reason)
             }
@@ -163,7 +160,7 @@ class Call {
         switch (this.endpointType) {
             case 'group':
                 try {
-                    res = await axios.delete(`https://${this.ip}/rest/sessions/self`, {
+                    res = await axios.delete(`https://${this.ipAddress}/rest/sessions/self`, {
                         headers: {
                             Cookie: `session_id=${this.sessionId}`
                         }
@@ -176,7 +173,7 @@ class Call {
                 return res;
             case 'nextGen':
                 try {
-                    res = await axios.delete(`https://${this.ip}/rest/session`, {
+                    res = await axios.delete(`https://${this.ipAddress}/rest/session`, {
                         headers: {
                             Cookie: `session_id=${this.sessionId}`
                         }

@@ -1,3 +1,0 @@
-Endpoint Name, Endpoint IP, Endpoint Type, Dial String,Call Type, Call Rate, Call/Endpoint State, Start Time, Audio TX Packet Loss, Audio TX Total Packets,Audio RX Packet Loss, Audio RX Total Packets,Video TX Packet Loss, Video TX Total Packets,Video RX Packet Loss, Video RX Total Packets,End Time
-x30,192.168.1.153,nextgen,888888.1120324757@t.plcm.vc,SIP,2048,CONNECTED,2021-9-17 16:39:44,0,3365,0,3354,0,15340,1,4191,2021-9-17 16:40:53
-GS1,192.168.1.133,group,888888.1120324757@t.plcm.vc,SIP,2048,CONNECTED,2021-9-17 16:39:43,5,3448,0,3439,115,14600,1,3617,2021-9-17 16:40:59
